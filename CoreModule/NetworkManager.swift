@@ -11,6 +11,8 @@ import Combine
 public class NetworkManager {
     private let baseURL = "https://api.themoviedb.org/3/"
     private let apiKey = "9a1ba21f7104aed688c34f2bcb4a09f4"
+
+  
     public init(){}
     
     public func fetch<T: Decodable>(_ endpoint: String) -> AnyPublisher<T, Error> {
@@ -24,4 +26,6 @@ public class NetworkManager {
             .receive(on: DispatchQueue.main)
             .eraseToAnyPublisher()
     }
+    
+ 
 }

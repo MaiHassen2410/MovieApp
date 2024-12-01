@@ -137,13 +137,16 @@ public struct TrendingMoviesView: View {
         ScrollView {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                 ForEach(viewModel.movies) { movie in
-                    MovieItem(movie: movie)
-                            .onAppear {
-                                if movie == viewModel.movies.last && !viewModel.isLoading {
-                                    viewModel.loadMore()
-                                }
-                            }
+                    NavigationLink(destination: MovieDetailsView(movieID: movie.id)) {
+                        MovieItem(movie: movie)
+                    }
+                    .onAppear() {
+                        if movie == viewModel.movies.last && !viewModel.isLoading  {
+                            viewModel.loadMore()
+                        }
+                    }
                 }
+                
                 
                 // Loading indicator for the first page only
                 if viewModel.isLoading && viewModel.movies.isEmpty {

@@ -33,9 +33,9 @@ public class TrendingMoviesViewModel: ObservableObject {
         }
     }
     @Published var isLoading: Bool = false
-
-    private var currentPage = 1
-    private var totalPages = 1
+// public to check from mock file (unit test)
+    public var currentPage = 1
+    public var totalPages = 1
     private var cancellables = Set<AnyCancellable>()
 
     private let repository: TrendingMoviesRepositoryProtocol

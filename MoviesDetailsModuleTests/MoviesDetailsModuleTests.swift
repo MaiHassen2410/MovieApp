@@ -7,30 +7,65 @@
 
 import XCTest
 @testable import MoviesDetailsModule
+import Combine
 
-final class MoviesDetailsModuleTests: XCTestCase {
+final class MovieDetailsViewModelTests: XCTestCase {
+        private var viewModel: MovieDetailsViewModel!
+        private var mockRepository: MockMovieDetailsRepository!
+        private var cancellables: Set<AnyCancellable>!
 
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-    }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-    }
-
-    func testExample() throws {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // Any test you write for XCTest can be annotated as throws and async.
-        // Mark your test throws to produce an unexpected failure when your test encounters an uncaught error.
-        // Mark your test async to allow awaiting for asynchronous code to complete. Check the results with assertions afterwards.
-    }
-
-    func testPerformanceExample() throws {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
+        override func setUp() {
+            super.setUp()
+            mockRepository = MockMovieDetailsRepository()
+            viewModel = MovieDetailsViewModel(repository: mockRepository)
+            cancellables = []
         }
+
+        override func tearDown() {
+            viewModel = nil
+            mockRepository = nil
+            cancellables = nil
+            super.tearDown()
+        }
+
+        func testFetchMovieDetailsSuccess() {
+            // Given
+            let expectation = XCTestExpectation(description: "Fetch movie details")
+            
+            // When
+            viewModel.$movie
+                .dropFirst()
+                .sink { movie in
+                    // Then
+                    XCTAssertNotNil(movie)
+                    XCTAssertEqual(movie?.title, mockMovieDetails.title)
+                    XCTAssertEqual(movie?.overview, mockMovieDetails.overview)
+                    XCTAssertEqual(movie?.budget, mockMovieDetails.budget)
+                    expectation.fulfill()
+                }
+                .store(in: &cancellables)
+            
+            viewModel.fetchMovieDetails(movieID: 1)
+
+            wait(for: [expectation], timeout: 1.0)
+        }
+
+    func testFetchMovieDetailsFailure() {
+        // Given
+        let expectation = XCTestExpectation(description: "Handle movie details fetch failure")
+        mockRepository.shouldReturnError = true
+
+        // When
+        viewModel.fetchMovieDetails(movieID: 1)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // Then
+            XCTAssertNil(self.viewModel.movie, "Movie should be nil on failure")
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 2.0)
     }
 
-}
+
+    }

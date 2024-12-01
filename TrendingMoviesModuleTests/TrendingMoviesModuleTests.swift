@@ -6,18 +6,28 @@
 //
 
 import XCTest
+import Combine
 @testable import TrendingMoviesModule
 
+
 final class TrendingMoviesModuleTests: XCTestCase {
-
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+    
+    var viewModel: TrendingMoviesViewModel!
+    var cancellables: Set<AnyCancellable>!
+    
+    override func setUp() {
+        super.setUp()
+        viewModel = TrendingMoviesViewModel(repository: MockTrendingMoviesRepository())
+        cancellables = []
     }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+    
+    override func tearDown() {
+        viewModel = nil
+        cancellables = nil
+        super.tearDown()
     }
-
+    
+    
     func testExample() throws {
         // This is an example of a functional test case.
         // Use XCTAssert and related functions to verify your tests produce the correct results.
@@ -25,12 +35,77 @@ final class TrendingMoviesModuleTests: XCTestCase {
         // Mark your test throws to produce an unexpected failure when your test encounters an uncaught error.
         // Mark your test async to allow awaiting for asynchronous code to complete. Check the results with assertions afterwards.
     }
+    func testFetchGenres() {
+        // Given
+        let expectation = XCTestExpectation(description: "Fetch genres")
+        
+        // When
+        viewModel.$genres
+            .dropFirst() // Skip the initial empty value
+            .sink { genres in
+                // Then
+                XCTAssertEqual(genres, mockGenres)
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+        
+        viewModel.fetchGenres()
+        
+        wait(for: [expectation], timeout: 1.0)
+    }
+    
+   
 
-    func testPerformanceExample() throws {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
-        }
+    func testFilterMoviesByGenre() async {
+        // Given
+        viewModel.allMovies = mockMovies
+        viewModel.selectedGenre = mockGenres.first(where: { $0.id == 1 })
+
+        // When
+        await viewModel.filterMovies()
+
+        // Then
+        XCTAssertEqual(viewModel.movies, mockMovies.filter { $0.genreIDs?.contains(1) == true })
+    }
+ 
+    func testFilterMoviesBySearchText() async {
+        // Given
+        viewModel.allMovies = mockMovies
+        viewModel.searchText = "Movie 1"
+
+        // When
+        await viewModel.filterMovies()
+
+        // Then
+        XCTAssertEqual(viewModel.movies, mockMovies.filter { $0.title?.localizedCaseInsensitiveContains("Movie 1") == true })
+    }
+    
+    func testLoadMoreMovies() {
+        // Given
+        viewModel.allMovies = mockMovies
+        viewModel.totalPages = 2
+        viewModel.currentPage = 1
+
+        let expectation = XCTestExpectation(description: "Load more movies")
+
+        // When
+        viewModel.$allMovies
+            .dropFirst()
+            .sink { movies in
+                // Then
+                XCTAssertEqual(movies, mockMovies + mockMovies) // Mock data returns the same movies for page 2
+                expectation.fulfill()
+            }
+            .store(in: &cancellables)
+
+        viewModel.loadMore()
+
+        wait(for: [expectation], timeout: 1.0)
     }
 
+    
+    
 }
+
+
+

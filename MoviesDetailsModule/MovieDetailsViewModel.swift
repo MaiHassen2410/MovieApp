@@ -29,8 +29,8 @@ class MovieDetailsViewModel: ObservableObject {
                 if case .failure(let error) = completion {
                     print("Error fetching movie details: \(error.localizedDescription)")
                 }
-            }, receiveValue: { movieDetails in
-                self.movie = movieDetails
+            }, receiveValue: { [weak self] movieDetails in
+                self?.movie = movieDetails
             })
             .store(in: &cancellables)
     }

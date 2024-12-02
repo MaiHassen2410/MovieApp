@@ -53,4 +53,10 @@ public struct MovieDetails: Codable {
 
 public struct SpokenLanguage: Codable {
     public  let name: String
+    enum CodingKeys: String, CodingKey {
+        case name
+    }
+    public init(name: String){
+        self.name = name
+    }
 }

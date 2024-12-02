@@ -131,15 +131,31 @@ public struct TrendingMoviesView: View {
             .background(Color.black)
         }
     }
+    
+    var offlineBanner: some View {
+        VStack {
+            if !NetworkManager.shared.isOnline {
+                Text("You are currently offline. Details are unavailable.")
+                    .foregroundColor(.white)
+                    .padding()
+                    .background(Color.red)
+                    .cornerRadius(8)
+                    .padding()
+            }
+        }
+    }
+    
+    
     // Movie list view
     var movieList: some View {
         ScrollViewReader { proxy in
         ScrollView {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                 ForEach(viewModel.movies) { movie in
-                    NavigationLink(destination: MovieDetailsView(movieID: movie.id)) {
-                        MovieItem(movie: movie)
-                    }
+                    movieRow(for: movie)
+                
+                    
+                    
                     .onAppear() {
                         if movie == viewModel.movies.last && !viewModel.isLoading  {
                             viewModel.loadMore()
@@ -166,52 +182,75 @@ public struct TrendingMoviesView: View {
         }
         .background(Color.black)
     }
+    private func movieRow(for movie: Movie) -> some View {
+        VStack {
+            if NetworkManager.shared.isOnline {
+                NavigationLink(destination: MovieDetailsView(movieID: movie.id)) {
+                    MovieItem(movie: movie)
+                }
+            } else {
+                MovieItem(movie: movie)
+                               .opacity(0.5) // Dim the item to indicate it's not clickable
+            }
+        }
+        .padding(.bottom, 8) // Optional: add some bottom padding for spacing
+    }
 }
+
 
 
 
 public struct MovieItem: View {
     var movie: Movie
-    
+    @StateObject private var imageLoader = ImageLoader()
+
     public init(movie: Movie) {
         self.movie = movie
     }
+
     public var body: some View {
         VStack {
-                   // Movie Poster
-                   AsyncImage(url: URL(string: "https://image.tmdb.org/t/p/w500\(movie.posterPath ?? "")")) { image in
-                       image
-                           .resizable()
-                           .scaledToFill()
-                   } placeholder: {
-                       // Placeholder if the image is loading
-                       Color.gray
-                   }
-                   .frame(maxWidth: .infinity)
-                   .frame(height: 200) // Adjust size
-                   .cornerRadius(10)
+            if let image = imageLoader.image {
+                // Display the cached or loaded image
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                // Placeholder while loading
+                Color.gray
+                    .frame(height: 200) // Adjust size
+                    .cornerRadius(10)
+            }
 
-                   // Movie Title
-                   Text(movie.title ?? "Unknown Title")
-                       .font(.headline)
-                       .foregroundColor(.white)
-                       .lineLimit(1)
-                       .padding(.top, 5)
+            // Movie Title
+            Text(movie.title ?? "Unknown Title")
+                .font(.headline)
+                .foregroundColor(.white)
+                .lineLimit(1)
+                .padding(.top, 5)
 
-                   // Movie Release Year
-                   if let releaseDate = movie.releaseDate, !releaseDate.isEmpty {
-                       Text(String(releaseDate.prefix(4))) // Extract year from release date
-                           .font(.subheadline)
-                           .foregroundColor(.gray)
-                   } else {
-                       Text("N/A")
-                           .font(.subheadline)
-                           .foregroundColor(.gray)
-                   }
-               }
-               .padding()
-        
+            // Movie Release Year
+            if let releaseDate = movie.releaseDate, !releaseDate.isEmpty {
+                Text(String(releaseDate.prefix(4))) // Extract year from release date
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+            } else {
+                Text("N/A")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+            }
+        }
+        .padding()
+        .onAppear {
+            if let posterPath = movie.posterPath, !posterPath.isEmpty {
+                let imageUrl = URL(string: "https://image.tmdb.org/t/p/w500\(posterPath)")
+                imageLoader.loadImage(from: imageUrl!)
+            } else {
+                print("No poster path for this movie.")
+            }
+        }
+        .onDisappear {
+            imageLoader.cancel()
+        }
     }
-    
 }
-

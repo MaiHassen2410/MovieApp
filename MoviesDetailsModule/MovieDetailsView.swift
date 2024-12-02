@@ -218,11 +218,4 @@ struct ScrollOffsetPreferenceKey: PreferenceKey {
 }
 
 
-extension Int {
-    func formattedWithCommas() -> String {
-        let numberFormatter = NumberFormatter()
-        numberFormatter.numberStyle = .decimal
-        return numberFormatter.string(from: NSNumber(value: self)) ?? "\(self)"
-    }
-}
 

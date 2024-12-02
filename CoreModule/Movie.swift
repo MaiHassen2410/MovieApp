@@ -48,7 +48,7 @@ public struct MovieListResponse: Codable {
       
     }
     
-    public init(page: Int, results: [Movie], totalResults: Int, totalPages: Int, genres:[Genre] ) {
+    public init(page: Int, results: [Movie], totalResults: Int, totalPages: Int) {
         self.page = page
         self.results = results
         self.totalResults = totalResults
